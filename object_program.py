@@ -44,6 +44,7 @@ def get_existing_objects(netconnect):
      return get_objects
 
 def create_object():
+        ''' Create ASA object and return a dictionary of object type and value'''
 
     #while True:
 
@@ -143,18 +144,15 @@ def main():
     device_ips = IPADDRESS
 
     for ip in device_ips:
-        device = create_device(ip, username, password)
-
-        
-        netconnect = ConnectHandler(**device)
-        netconnect.enable()
-
-        existing_object = get_existing_objects(netconnect)
-        
+        device = create_device(ip, username, password)   
       
 
         new_object = create_object() # return host or fqdn or range or subnet as a dictionary
         if new_object: ## if a new object was created
+
+            netconnect = ConnectHandler(**device)
+            netconnect.enable()
+            existing_object = get_existing_objects(netconnect)
 
             object_present = check_object_exists(new_object, existing_object)
 
@@ -164,6 +162,7 @@ def main():
                 description = input("Enter description: ")
 
                 post_command = create_object_command(name, description, new_object)
+                print(post_command)
                 
 
 
