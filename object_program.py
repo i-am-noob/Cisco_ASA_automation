@@ -143,14 +143,17 @@ def main():
     username,password = get_credentials()
     device_ips = IPADDRESS
 
+    new_object = create_object()
+    
     for ip in device_ips:
         device = create_device(ip, username, password)   
       
 
-        new_object = create_object() # return host or fqdn or range or subnet as a dictionary
+         # return host or fqdn or range or subnet as a dictionary
         if new_object: ## if a new object was created
 
             netconnect = ConnectHandler(**device)
+            print(f"Connecting to {ip}.............................\n")
             netconnect.enable()
             existing_object = get_existing_objects(netconnect)
 
