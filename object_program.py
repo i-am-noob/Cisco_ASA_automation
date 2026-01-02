@@ -46,7 +46,7 @@ def get_existing_objects(netconnect):
 def create_object():
         ''' Create ASA object and return a dictionary of object type and value'''
 
-    #while True:
+    
 
         object_type = input("Enter object type (host/subnet/FQDN) or quit: ").lower()
 
@@ -63,7 +63,7 @@ def create_object():
         elif object_type == 'subnet':
             network = input("Enter Network IP: ")
             netmask = input("Enter the Subnet Mask: ")
-            subnet_object = {'network': network, 'netmask' : netmask}
+            subnet_object = {'network': network, 'subnet' : netmask}
             return subnet_object
 
         elif object_type =='fqdn':
@@ -124,59 +124,63 @@ def create_object_command(name, description, new_object):
                     f"fqdn {new_object['fqdn']}",
                     f"description {description}"]
         
-    return commands
-
-
-
-
-
-
-
-
-
-    
+    return commands 
 
         
 
 
 def main():
-    username,password = get_credentials()
+    username, password = get_credentials()
     device_ips = IPADDRESS
 
-    new_object = create_object()
-    
-    for ip in device_ips:
-        device = create_device(ip, username, password)   
-      
+    while True:  # Global loop: Keep adding objects until user wants to quit
+        new_object = create_object()
+        
+        if not new_object:
+            break
 
-         # return host or fqdn or range or subnet as a dictionary
-        if new_object: ## if a new object was created
-
+        for ip in device_ips:
+            device = create_device(ip, username, password)   
+            
+            # Connect to the device
             netconnect = ConnectHandler(**device)
             print(f"Connecting to {ip}.............................\n")
             netconnect.enable()
+            
             existing_object = get_existing_objects(netconnect)
-
             object_present = check_object_exists(new_object, existing_object)
 
-            if not object_present:
-                print("Need to create new object")
-                name = input("Enter the name for your object: ")
+            # If exists, ask to add another object for this specific device
+            while object_present:
+                choice = input(f"Object already exists on {ip}. Do you wanna add another object? (yes/no): ")
+                if choice.lower() == 'yes':
+                    new_object = create_object()
+                    if not new_object:
+                        break
+                    object_present = check_object_exists(new_object, existing_object)
+                else:
+                    break
+
+            # If object is now unique, create it
+            if not object_present and new_object:
+                print(f"Creating new object on {ip}...")
+                name = input("Enter the name for your object: ").replace(" ", "_")
                 description = input("Enter description: ")
 
                 post_command = create_object_command(name, description, new_object)
-                print(post_command)
-                
+                send_command = netconnect.send_config_set(post_command)
+                print(send_command)
 
+            netconnect.disconnect()
 
-
-
-                
-
-        netconnect.disconnect()
-
+        # After all devices are finished, ask if user wants to start the whole process again
+        final_choice = input("\nFinished deployment to all devices. Do you want to add another brand new object? (yes/no): ")
+        if final_choice.lower() != 'yes':
+            print("Exiting program.")
+            break
 
 if __name__ == "__main__":
     main()
+
 
 
